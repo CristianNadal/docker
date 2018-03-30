@@ -7,7 +7,7 @@
 
 FROM postgres:9.6
 
-MAINTAINER xtian.nadal@gmail.com
+MAINTAINER Cristian Nadal <xtian.nadal@gmail.com>
 
 RUN localedef -i es_ES -c -f UTF-8 -A /usr/share/locale/locale.alias es_ES.UTF-8
 

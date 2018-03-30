@@ -1,5 +1,5 @@
 FROM jenkins:2.60.1
-MAINTAINER xtian.nadal@gmail.com
+MAINTAINER Cristian Nadal <xtian.nadal@gmail.com>
 
 USER root
 RUN mkdir /var/log/jenkins
