@@ -1,0 +1,124 @@
+version: '3'
+
+services:
+  database:
+    image: cnadalm-postgres:1.0
+    networks:
+      - environment_net
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=newpwd
+    volumes:
+      # Persist postgres data to a volume
+      - postgres_data:/var/lib/postgresql/data
+      # Add scripts to populate database
+      - ./dist/sql:/docker-entrypoint-initdb.d:rw
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.1.0
+    environment:
+      - cluster.name=cnadalm-cluster
+      #- bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      # Persist elasticsearch data to a volume
+      - elastic_data:/usr/share/elasticsearch/data
+      # ES configuration options
+      - ./elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - ./elasticsearch/elasticsearch.conf:/etc/sysctl.d/.conf
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    networks:
+      - environment_net
+
+  api:
+    image: cnadalm-wildfly:1.0
+    networks:
+      - environment_net
+    ports:
+      - "9080:8080"
+      - "8443:8443"
+      - "9990:9990"
+      - "8787:8787"
+    volumes:
+      # Deploy ROOT.war in deployments folder
+      - ./deployments:/opt/jboss/wildfly/standalone/deployments:rw
+      # Share data between services in development env
+      #- deployments_vol:/opt/jboss/wildfly/standalone/deployments:rw
+    depends_on:
+      - database
+      - elasticsearch
+    
+  proxy:
+    image: nginx
+    networks:
+      - environment_net
+    ports:
+      - "8080:80"
+    volumes:
+      - ./manager-client/export:/usr/share/nginx/html:rw
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    command: /bin/bash -c "nginx -g 'daemon off;'"
+    depends_on:
+      - api
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:6.1.0
+    environment:
+      # Point Kibana to the elasticsearch container
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    volumes:
+      # kibana configuration options
+      - ./kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
+    ports:
+      - "5601:5601"
+    networks:
+      - environment_net
+    depends_on:
+      - elasticsearch
+
+  sonar:
+    image: sonarqube:6.4
+    networks:
+      - environment_net
+    ports:
+      - "9000:9000"
+      - "9092:9092"
+
+  jenkins:
+    image: dondecomo-jenkins:1.0
+    volumes:
+      # Persist jenkins configuration data to a volume
+      - jenkins_conf_data:/var/jenkins_home
+      # Share artifacts between services
+      #- deployments_vol:/var/jenkins_home/workspace-pipeline/deployments
+      - ./deployments:/var/jenkins_home/workspace-pipeline/deployments
+      - /var/log/jenkins
+    ports:
+      - "9090:8080"
+      - "50000:50000"
+    networks:
+      - environment_net
+    depends_on:
+      - sonar
+
+# Note: These volumes persist as long as we don't type : docker-compose down -v
+volumes:
+  #deployments_vol:
+  #  driver: local
+  jenkins_conf_data:
+    driver: local
+  postgres_data:
+    driver: local
+  elastic_data:
+    driver: local
+  #elastic_data2:
+  #  driver: local
+
+networks:
+  environment_net:
+    driver: bridge
