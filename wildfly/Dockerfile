@@ -26,11 +26,19 @@ ARG DS_MAX_POOL_SIZE=50
 
 # /!\ Add PG driver
 ADD postgresql-${POSTGRESQL_VERSION}.jar /tmp
-#RUN 	cd /tmp && \
-#    	curl --location --output postgresql-${POSTGRESQL_VERSION}.jar --url http://search.maven.org/remotecontent?filepath=org/postgresql/postgresql/${POSTGRESQL_VERSION}/postgresql-${POSTGRESQL_VERSION}.jar    
+#RUN cd /tmp && \
+#    curl --location --output postgresql-${POSTGRESQL_VERSION}.jar --url http://search.maven.org/remotecontent?filepath=org/postgresql/postgresql/${POSTGRESQL_VERSION}/postgresql-${POSTGRESQL_VERSION}.jar    
 
-# Install postgres drivers and datasource, then tune the DDBB
-# Install postgres drivers and datasource, then tune the DDBB
+# Download Hibernate 5.2.15 to benefit of new java8 types, then replace version
+RUN cd $JBOSS_HOME/modules/system/layers/base/org/hibernate/main && \
+    curl -O http://central.maven.org/maven2/org/hibernate/hibernate-core/5.2.15.Final/hibernate-core-5.2.15.Final.jar && \
+    curl -O http://central.maven.org/maven2/org/hibernate/hibernate-envers/5.2.15.Final/hibernate-envers-5.2.15.Final.jar && \
+    sed -i.bak "s/5.1.10/5.2.15/" module.xml && \
+    sed -i.bak "/entitymanager/d" module.xml && \
+    sed -i.bak "/java8/d" module.xml && \
+    rm *.bak
+
+# Install postgres driver and datasource, then tune the DDBB
 RUN /bin/sh -c '$JBOSS_HOME/bin/standalone.sh &' && \
     sleep 6 && \
     $JBOSS_HOME/bin/jboss-cli.sh --connect --command="module add --name=org.postgresql --resources=/tmp/postgresql-${POSTGRESQL_VERSION}.jar --dependencies=javax.api,javax.transaction.api" && \
@@ -47,5 +55,4 @@ RUN $JBOSS_HOME/bin/add-user.sh admin admin --silent
 # Set the default entrypoint to run on boot
 # This will boot WildFly in the standalone mode and bind to all interface
 # Note: in standalone mode we need -Duser.timezone=UTC to configure UTC timezone
-#CMD ["/opt/jboss/wildfly/bin/standalone.sh", "-b", "0.0.0.0", "-bmanagement", "0.0.0.0", "--debug", "-DPOSTGRES_HOST=localhost", "-DPOSTGRES_PORT=5432", "-DPOSTGRES_USER=micro", "-DPOSTGRES_PASSWORD=micro", "-Duser.timezone=UTC"]
-CMD /bin/sh -c '/opt/jboss/wildfly/bin/standalone.sh -b 0.0.0.0 -bmanagement 0.0.0.0 --debug -DPOSTGRES_HOST=$DB_HOST -DPOSTGRES_PORT=$DB_PORT -DPOSTGRES_USER=$DB_USER -DPOSTGRES_PASSWORD=$DB_PASS -Duser.timezone=UTC'
+CMD /bin/sh -c '/opt/jboss/wildfly/bin/standalone.sh -b 0.0.0.0 -bmanagement 0.0.0.0 --debug -DPOSTGRES_HOST=$DB_HOST -DPOSTGRES_PORT=$DB_PORT -DPOSTGRES_USER=$DB_USER -DPOSTGRES_PASSWORD=$DB_PASS -Duser.timezone=UTC -Dee8.preview.mode=true'
