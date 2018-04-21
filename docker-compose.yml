@@ -7,10 +7,6 @@ services:
       - environment_net
     ports:
       - "5432:5432"
-    environment:
-      - POSTGRES_DB=postgres
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=newpwd
     volumes:
       # Persist postgres data to a volume
       - postgres_data:/var/lib/postgresql/data
