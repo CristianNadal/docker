@@ -2,11 +2,15 @@ version: '3'
 
 services:
   database:
-    image: micro/postgres:1.0
+    image: cnadalm-postgres:1.0
     networks:
       - environment_net
     ports:
       - "5432:5432"
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=newpwd
     volumes:
       # Persist postgres data to a volume
       - postgres_data:/var/lib/postgresql/data
@@ -32,17 +36,17 @@ services:
 #      - environment_net
 
   api:
-    image: cnadalm-payara:1.0
+    image: cnadalm-wildfly:1.0
     networks:
       - environment_net
     ports:
-      - "4848:4848"
-      - "8009:8009"
-      - "8080:8080"
-      - "8181:8181"
+      - "9080:8080"
+      - "8443:8443"
+      - "9990:9990"
+      - "8787:8787"
     volumes:
       # Deploy ROOT.war in deployments folder
-      - ../distribution/artifacts:/opt/payara5/glassfish/domains/domain1/autodeploy:rw
+      - ../distribution/artifacts:/opt/jboss/wildfly/standalone/deployments:rw
       # Share data between services in development env
       #- deployments_vol:/opt/jboss/wildfly/standalone/deployments:rw
     depends_on:

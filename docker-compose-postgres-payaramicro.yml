@@ -1,0 +1,62 @@
+version: '3'
+
+services:
+  database:
+    image: micro/postgres:1.0
+    networks:
+      - environment_net
+    ports:
+      - "5432:5432"
+    volumes:
+      # Persist postgres data to a volume
+      - postgres_data:/var/lib/postgresql/data
+      # Add scripts to populate database
+      - ../distribution/scripts/sql:/docker-entrypoint-initdb.d:rw
+
+  account-api:
+    image: payara/micro:5.181
+    env_file:
+      - datasource.env
+    networks:
+      - environment_net
+    ports:
+      - "4848:4848"
+      - "8009:8009"
+      - "8080:8080"
+      - "8181:8181"
+    volumes:
+      # Deploy war in deployment folder
+      - ../distribution/account/artifacts:/opt/payara/deployments:rw
+      # Add external JARS to server
+      - ../distribution/externalLibs:/opt/payara/externalLibs:rw
+      # Add post boot commands to server (timezone, memory limits, configurations, etc)
+      - ../distribution/account/command-files/post-boot.txt:/opt/payara/post-boot.txt:rw
+      # (DEV only) Access to logs
+      - ../distribution/account/logs:/opt/payara/logs:rw
+    entrypoint:
+      - java
+      - -jar
+      - /opt/payara/payara-micro.jar
+      - --addLibs
+      - /opt/payara/externalLibs
+      - --deploymentDir
+      - /opt/payara/deployments
+      - --postbootcommandfile
+      - /opt/payara/post-boot.txt
+      - --logToFile
+      - /opt/payara/logs/payara-server.log
+    depends_on:
+      - database
+    
+# Note: These volumes persist as long as we don't type : docker-compose down -v
+volumes:
+#  deployments_vol:
+#    driver: local
+  jenkins_conf_data:
+    driver: local
+  postgres_data:
+    driver: local
+
+networks:
+  environment_net:
+    driver: bridge

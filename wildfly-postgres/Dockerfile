@@ -9,16 +9,16 @@
 
 FROM jboss/wildfly:12.0.0.Final
 
-MAINTAINER Cristian Nadal <xtian.nadal@gmail.com>
+MAINTAINER Cristian Nadal "xtian.nadal@gmail.com"
 
 ENV POSTGRESQL_VERSION 42.1.4
 
 # Args for connection
 ARG DB_HOST=localhost
 ARG DB_PORT=5432
-ARG DB_NAME=postgres
-ARG DB_USER=postgres
-ARG DB_PASS=changeme
+ARG DB_NAME
+ARG DB_USER
+ARG DB_PASS
 
 # Args for datasource
 ARG DS_NAME=PostgreSQLDS
@@ -47,8 +47,10 @@ RUN /bin/sh -c '$JBOSS_HOME/bin/standalone.sh &' && \
     $JBOSS_HOME/bin/jboss-cli.sh --connect --command=:shutdown && \
     rm -rf $JBOSS_HOME/standalone/configuration/standalone_xml_history/ $JBOSS_HOME/standalone/log/*
 
+# Expose ports
 EXPOSE 8080 8443 9990 8787
 
+# Add user to server
 USER jboss
 RUN $JBOSS_HOME/bin/add-user.sh admin admin --silent
 
