@@ -16,11 +16,14 @@ sudo docker build --rm=true --no-cache --build-arg DB_HOST=database --build-arg 
 sudo docker build --rm=true --no-cache --build-arg DS_NAME=anynameds --build-arg DB_NAME=anynamedb -t cnadalm/wildfly-h2:1.0 wildfly-h2/.
 
 ## Create image from payara-micro/Dockerfile
-sudo docker build --rm=true --no-cache -t micro/payara:1.0 payara-micro/.
+### /!\ Implemented directly on the docker-compose file
 
 ## Create image from payara-web/Dockerfile
 ### /!\ Remember to change DB_PASS
 sudo docker build --rm=true --no-cache --build-arg DB_HOST=database --build-arg DB_NAME=microdb --build-arg DB_USER=micro --build-arg DB_PASS=changeme -t web/payara:1.0 payara-web/.
+
+## Create image from payara-web-h2/Dockerfile
+sudo docker build --rm=true --no-cache --build-arg DS_NAME=anynameds --build-arg DB_NAME=anynamedb -t cnadalm/payara-web-h2:1.0 payara-web-h2/.
 
 ## List docker images
 sudo docker images
